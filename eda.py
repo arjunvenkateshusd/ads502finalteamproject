@@ -34,16 +34,23 @@ print("Test Shape:", test.shape)
 X = train.drop(columns=['Target'])
 y = train['Target']
 
-# Identify numeric and categorical features
-numeric_features = [col for col in X.columns if X[col].nunique() > 10 and col != 'Target']
-categorical_features = [col for col in X.columns if col not in numeric_features]
+# ================================
+# Step 3: Data Cleaning and Preparation
+# ================================
+# Manually specify categorical columns
+categorical_features = [
+    'Marital status', 'Application order', 'Daytime/evening attendance', 
+    'Displaced', 'Educational special needs', 'Debtor', 
+    'Tuition fees up to date', 'Gender', 'Scholarship holder', 
+    'International'
+]
+
+# Automatically identify numeric features
+numeric_features = [col for col in X.columns if col not in categorical_features]
 
 print(f"Numeric Features: {numeric_features}")
 print(f"Categorical Features: {categorical_features}")
 
-# ================================
-# Step 3: Data Cleaning and Preparation
-# ================================
 # Normalize numeric features
 scaler = StandardScaler()
 X[numeric_features] = scaler.fit_transform(X[numeric_features])

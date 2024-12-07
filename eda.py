@@ -57,6 +57,36 @@ print(f"Categorical Features: {categorical_features}")
 scaler = StandardScaler()
 X[numeric_features] = scaler.fit_transform(X[numeric_features])
 
+#Target encoding for categorical features 
+def target_encode(X, y, categorical_features):
+    
+    encoded_X = X.copy()
+    target_mapping = {label: idx for idx, label in enumerate(y.unique())}
+    y_encoded = y.map(target_mapping)
+
+    encoding_dict = {}
+
+    for feature in categorical_features:
+        # Skip binary features
+        if X[feature].nunique() <= 2:
+            continue
+
+        for target_class in y.unique():
+            target_class_idx = target_mapping[target_class]
+            new_column_name = f"{feature}_{target_class}"
+
+            # For each category in a given feature, calculate the proportion of that category being of the current target class
+            class_means = X.groupby(feature).apply(lambda x: np.mean(y_encoded[x.index] == target_class_idx)).to_dict()
+            
+            # Map the proportion values to the feature column
+            encoded_X[new_column_name] = X[feature].map(class_means)
+        
+        encoding_dict[feature] = class_means
+    
+    return encoded_X
+
+X = target_encode(X, y, categorical_features)
+
 # Correlation heatmap
 plt.figure(figsize=(15, 12))
 sns.heatmap(

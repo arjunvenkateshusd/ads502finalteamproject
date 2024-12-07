@@ -57,7 +57,7 @@ print(f"Categorical Features: {categorical_features}")
 scaler = StandardScaler()
 X[numeric_features] = scaler.fit_transform(X[numeric_features])
 
-#Target encoding for categorical features 
+# Target encoding for categorical features 
 def target_encode(X, y, categorical_features):
     
     encoded_X = X.copy()
@@ -86,6 +86,11 @@ def target_encode(X, y, categorical_features):
     return encoded_X
 
 X = target_encode(X, y, categorical_features)
+
+# **Fix Begins Here**
+# After target encoding, we have new numeric columns. Let's redefine numeric_features to include them.
+numeric_features = X.select_dtypes(include=[np.number]).columns.tolist()
+# **Fix Ends Here**
 
 # Correlation heatmap
 plt.figure(figsize=(15, 12))
@@ -211,7 +216,6 @@ plt.ylabel("Model")
 plt.tight_layout()
 plt.show()
 
-
 # ================================
 # Step 8: ROC Curve Comparisons 
 # ================================
@@ -241,7 +245,6 @@ roc_auc_rf = {}
 for i in range(3):  
     fpr_rf[i], tpr_rf[i], _ = roc_curve(y_val_bin[:, i], y_prob_rf[:, i])
     roc_auc_rf[i] = auc(fpr_rf[i], tpr_rf[i])
-
 
 # Plot ROC curves for Logistic Regression
 plt.figure(figsize=(8, 6))

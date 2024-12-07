@@ -10,6 +10,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.preprocessing import label_binarize
+from sklearn.metrics import roc_curve, auc
 
 # ================================
 # Step 1: Define Purpose
@@ -105,6 +107,7 @@ X_train, X_val, y_train, y_val = train_test_split(X_pca, y, test_size=0.2, rando
 log_reg = LogisticRegression(max_iter=1000, random_state=42)
 log_reg.fit(X_train, y_train)
 y_pred_lr = log_reg.predict(X_val)
+y_prob_lr = log_reg.predict_proba(X_val) 
 print("\nLogistic Regression Metrics:")
 print("Accuracy:", accuracy_score(y_val, y_pred_lr))
 print("Classification Report:\n", classification_report(y_val, y_pred_lr))
@@ -113,6 +116,7 @@ print("Classification Report:\n", classification_report(y_val, y_pred_lr))
 decision_tree = DecisionTreeClassifier(random_state=42)
 decision_tree.fit(X_train, y_train)
 y_pred_dt = decision_tree.predict(X_val)
+y_prob_dt = decision_tree.predict_proba(X_val)
 print("\nDecision Tree Metrics:")
 print("Accuracy:", accuracy_score(y_val, y_pred_dt))
 print("Classification Report:\n", classification_report(y_val, y_pred_dt))
@@ -121,6 +125,7 @@ print("Classification Report:\n", classification_report(y_val, y_pred_dt))
 random_forest = RandomForestClassifier(n_estimators=100, random_state=42)
 random_forest.fit(X_train, y_train)
 y_pred_rf = random_forest.predict(X_val)
+y_prob_rf = random_forest.predict_proba(X_val)
 print("\nRandom Forest Metrics:")
 print("Accuracy:", accuracy_score(y_val, y_pred_rf))
 print("Classification Report:\n", classification_report(y_val, y_pred_rf))
@@ -173,5 +178,76 @@ sns.barplot(x="Accuracy", y="Model", data=model_comparison, palette="viridis")
 plt.title("Model Accuracy Comparison")
 plt.xlabel("Accuracy")
 plt.ylabel("Model")
+plt.tight_layout()
+plt.show()
+
+
+# ================================
+# Step 8: ROC Curve Comparisons 
+# ================================
+# Encode target labels for multi-class ROC
+y_val_bin = label_binarize(y_val, classes=['Dropout', 'Enrolled', 'Graduate'])
+
+# ROC Calc Logistic Regression
+fpr_lr = {}
+tpr_lr = {}
+roc_auc_lr = {}
+for i in range(3):  
+    fpr_lr[i], tpr_lr[i], _ = roc_curve(y_val_bin[:, i], y_prob_lr[:, i])
+    roc_auc_lr[i] = auc(fpr_lr[i], tpr_lr[i])
+
+# ROC Calc Decision Tree
+fpr_dt = {}
+tpr_dt = {}
+roc_auc_dt = {}
+for i in range(3):  
+    fpr_dt[i], tpr_dt[i], _ = roc_curve(y_val_bin[:, i], y_prob_dt[:, i])
+    roc_auc_dt[i] = auc(fpr_dt[i], tpr_dt[i])
+
+# ROC Calc Random Forest
+fpr_rf = {}
+tpr_rf = {}
+roc_auc_rf = {}
+for i in range(3):  
+    fpr_rf[i], tpr_rf[i], _ = roc_curve(y_val_bin[:, i], y_prob_rf[:, i])
+    roc_auc_rf[i] = auc(fpr_rf[i], tpr_rf[i])
+
+
+# Plot ROC curves for Logistic Regression
+plt.figure(figsize=(8, 6))
+for i in range(3):
+    plt.plot(fpr_lr[i], tpr_lr[i], lw=2, label=f'Class {["Dropout", "Enrolled", "Graduate"][i]} (AUC = {roc_auc_lr[i]:.2f})')
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  
+plt.title('ROC Curve - Logistic Regression')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.grid(True, linestyle='--', color='gray')  
+plt.legend(loc='lower right')
+plt.tight_layout()
+plt.show()
+
+# Plot ROC curves for Decision Tree
+plt.figure(figsize=(8, 6))
+for i in range(3):
+    plt.plot(fpr_dt[i], tpr_dt[i], lw=2, label=f'Class {["Dropout", "Enrolled", "Graduate"][i]} (AUC = {roc_auc_dt[i]:.2f})')
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  
+plt.title('ROC Curve - Decision Tree')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.grid(True, linestyle='--', color='gray')  
+plt.legend(loc='lower right')
+plt.tight_layout()
+plt.show()
+
+# Plot ROC curves for Random Forest
+plt.figure(figsize=(8, 6))
+for i in range(3):
+    plt.plot(fpr_rf[i], tpr_rf[i], lw=2, label=f'Class {["Dropout", "Enrolled", "Graduate"][i]} (AUC = {roc_auc_rf[i]:.2f})')
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  
+plt.title('ROC Curve - Random Forest')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.grid(True, linestyle='--', color='gray')  
+plt.legend(loc='lower right')
 plt.tight_layout()
 plt.show()

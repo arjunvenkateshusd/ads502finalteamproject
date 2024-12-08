@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import roc_curve, auc
+from sklearn.multiclass import OneVsRestClassifier
 
 # ================================
 # Step 1: Define Purpose
@@ -39,19 +40,86 @@ y = train['Target']
 # ================================
 # Step 3: Data Cleaning and Preparation
 # ================================
+
+# View a few lines of the data
+print(train.head())
+
+# List all the features/columns
+train.columns
+
+# View the data types of each column:
+print(train.dtypes)
+
+# Check for any missing values
+total_missing_values = train.isnull().sum().sum()
+print("Total missing values in the dataset:", total_missing_values)
+
 # Manually specify categorical columns
 categorical_features = [
-    'Marital status', 'Application order', 'Daytime/evening attendance', 
-    'Displaced', 'Educational special needs', 'Debtor', 
-    'Tuition fees up to date', 'Gender', 'Scholarship holder', 
-    'International'
+    'Marital status', 'Application mode', 'Course', 'Daytime/evening attendance', 'Previous qualification', 'Nacionality', 
+    "Mother's qualification", "Father's qualification",  "Mother's occupation", "Father's occupation", 'Displaced', 
+    'Educational special needs', 'Debtor', 'Tuition fees up to date', 'Gender', 'Scholarship holder', 'International'
 ]
 
 # Automatically identify numeric features
 numeric_features = [col for col in X.columns if col not in categorical_features]
 
+# Manually drop the 'id' column
+numeric_features = [col for col in numeric_features if col != 'id']
+
 print(f"Numeric Features: {numeric_features}")
 print(f"Categorical Features: {categorical_features}")
+
+
+# Explore categorical features
+
+# View bar graph of target feature student academic success called "Target"
+target_counts = train['Target'].value_counts().reset_index()
+target_counts.columns = ['Target', 'count']
+plt.figure(figsize=(8,5))
+sns.barplot(data=target_counts, x='Target', y='count', hue='Target', palette='viridis', dodge=False, legend=False)
+plt.xlabel("Student Academic Status")
+plt.ylabel("Count")
+plt.title("Student Academic Status Distribution")
+plt.show()
+
+# Normalized bar graph of student academic success, overlayed with gender
+crosstab_01 = pd.crosstab(train['Target'], train['Gender'])
+crosstab_norm = crosstab_01.div(crosstab_01.sum(1), axis = 0)
+ax_norm = crosstab_norm.plot(kind='bar', stacked = True, figsize=(8,5))
+plt.title("Normalized Student Academic Status, Overlayed with Gender")
+plt.xlabel("Student Academic Status")
+plt.ylabel("Count")
+ax_norm.legend(["Female", "Male"], title="Gender", loc="upper left")
+plt.show()
+
+# Normalized bar graph of student academic success, overlayed with scholarship holder
+crosstab_02 = pd.crosstab(train['Target'], train['Scholarship holder'])
+crosstab_norm2 = crosstab_02.div(crosstab_02.sum(1), axis = 0)
+ax_norm2 = crosstab_norm2.plot(kind='bar', stacked = True, figsize=(8,5))
+plt.title("Normalized Student Academic Status, Overlayed with Scholarship holder")
+plt.xlabel("Student Academic Status")
+plt.ylabel("Count")
+ax_norm2.legend(["No", "Yes"], title="Scholarship holder", loc="upper left")
+plt.show()
+
+
+# Explore numerical features
+
+# Summary statistics for numeric features
+print(train[numeric_features].describe())
+
+# Visualize distributions of select features using histograms
+selected_columns = ['Previous qualification (grade)', 'Age at enrollment', 'Curricular units 1st sem (grade)']
+fig, axes = plt.subplots(3, 1, figsize=(4, 7))
+for i, col in enumerate(selected_columns):
+    sns.histplot(train[col], kde=True, bins=30, ax=axes[i])
+    axes[i].set_title(f"Distribution of {col}")
+    axes[i].set_xlabel(col)
+    axes[i].set_ylabel("Frequency")
+plt.tight_layout()
+plt.show()
+
 
 # Normalize numeric features
 scaler = StandardScaler()

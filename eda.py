@@ -70,7 +70,6 @@ numeric_features = [col for col in numeric_features if col != 'id']
 print(f"Numeric Features: {numeric_features}")
 print(f"Categorical Features: {categorical_features}")
 
-
 # Explore categorical features
 
 # View bar graph of target feature student academic success called "Target"
@@ -103,7 +102,6 @@ plt.ylabel("Count")
 ax_norm2.legend(["No", "Yes"], title="Scholarship holder", loc="upper left")
 plt.show()
 
-
 # Explore numerical features
 
 # Summary statistics for numeric features
@@ -119,7 +117,6 @@ for i, col in enumerate(selected_columns):
     axes[i].set_ylabel("Frequency")
 plt.tight_layout()
 plt.show()
-
 
 # Normalize numeric features
 scaler = StandardScaler()
@@ -142,7 +139,7 @@ def target_encode(X, y, categorical_features):
         for target_class in y.unique():
             target_class_idx = target_mapping[target_class]
             new_column_name = f"{feature}_{target_class}"
-
+            
             # For each category in a given feature, calculate the proportion of that category being of the current target class
             class_means = X.groupby(feature).apply(lambda x: np.mean(y_encoded[x.index] == target_class_idx)).to_dict()
             
@@ -161,14 +158,17 @@ numeric_features = X.select_dtypes(include=[np.number]).columns.tolist()
 # **Fix Ends Here**
 
 # Correlation heatmap
+# To make the correlation heatmap less crowded, we'll show only the upper triangle and remove annotations.
+corr = X[numeric_features].corr()
+mask = np.triu(np.ones_like(corr, dtype=bool))
 plt.figure(figsize=(15, 12))
 sns.heatmap(
-    X[numeric_features].corr(),
-    annot=True,
+    corr,
+    mask=mask,
+    annot=False,
     fmt=".2f",
     cmap="coolwarm",
-    cbar_kws={'label': 'Correlation Coefficient'},
-    annot_kws={'size': 8}
+    cbar_kws={'label': 'Correlation Coefficient'}
 )
 plt.title("Correlation Heatmap (Numeric Features)", fontsize=16)
 plt.xticks(rotation=45, ha='right', fontsize=10)
@@ -185,8 +185,8 @@ print("\nVariance Inflation Factor (VIF):\n", vif_data.sort_values(by='VIF', asc
 # ================================
 # Step 4: Dimension Reduction with PCA
 # ================================
-# Apply PCA to reduce dimensions while retaining 95% variance
-pca = PCA(n_components=0.95)
+# Adjust PCA to ensure more than one component is retained
+pca = PCA(n_components=3)
 X_pca = pca.fit_transform(X[numeric_features])
 print(f"Number of components after PCA: {pca.n_components_}")
 
@@ -206,8 +206,8 @@ plt.show()
 # Split data into train and validation sets
 X_train, X_val, y_train, y_val = train_test_split(X_pca, y, test_size=0.2, random_state=42)
 
-# Logistic Regression (Baseline Model)
-log_reg = LogisticRegression(max_iter=1000, random_state=42)
+# Logistic Regression (Baseline Model) with balanced class weights to avoid single-class prediction
+log_reg = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced')
 log_reg.fit(X_train, y_train)
 y_pred_lr = log_reg.predict(X_val)
 y_prob_lr = log_reg.predict_proba(X_val) 
@@ -215,8 +215,8 @@ print("\nLogistic Regression Metrics:")
 print("Accuracy:", accuracy_score(y_val, y_pred_lr))
 print("Classification Report:\n", classification_report(y_val, y_pred_lr))
 
-# Decision Tree
-decision_tree = DecisionTreeClassifier(random_state=42)
+# Decision Tree with balanced class weights
+decision_tree = DecisionTreeClassifier(random_state=42, class_weight='balanced')
 decision_tree.fit(X_train, y_train)
 y_pred_dt = decision_tree.predict(X_val)
 y_prob_dt = decision_tree.predict_proba(X_val)
@@ -224,8 +224,8 @@ print("\nDecision Tree Metrics:")
 print("Accuracy:", accuracy_score(y_val, y_pred_dt))
 print("Classification Report:\n", classification_report(y_val, y_pred_dt))
 
-# Random Forest
-random_forest = RandomForestClassifier(n_estimators=100, random_state=42)
+# Random Forest with balanced class weights
+random_forest = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced')
 random_forest.fit(X_train, y_train)
 y_pred_rf = random_forest.predict(X_val)
 y_prob_rf = random_forest.predict_proba(X_val)
